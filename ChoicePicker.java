@@ -5,12 +5,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import androidx.appcompat.app.AlertDialog;
+import android.view.View;
 import android.widget.Button;
+import com.google.appinventor.components.annotations.*;
 import com.google.appinventor.components.annotations.DesignerComponent;
 import com.google.appinventor.components.annotations.DesignerProperty;
 import com.google.appinventor.components.annotations.SimpleFunction;
 import com.google.appinventor.components.annotations.SimpleEvent;
 import com.google.appinventor.components.annotations.SimpleProperty;
+import com.google.appinventor.components.common.ComponentCategory;
 import com.google.appinventor.components.common.PropertyTypeConstants;
 import com.google.appinventor.components.runtime.EventDispatcher;
 import com.google.appinventor.components.runtime.AndroidNonvisibleComponent;
@@ -19,8 +22,15 @@ import com.google.appinventor.components.runtime.ComponentContainer;
 @DesignerComponent(
         version = 2,
         description = "Choice Picker extension to show single and multi choice picker dialogs. Developed by The K Studio.",
+        category = ComponentCategory.EXTENSION,
         nonVisible = true,
-        iconName = "checkmark.png")
+        iconName = "aiwebres/check.png")
+
+@SimpleObject(external = true)
+//Libraries
+@UsesLibraries(libraries = "")
+//Permissions
+@UsesPermissions(permissionNames = "")
 
 public class ChoicePicker extends AndroidNonvisibleComponent {
 
@@ -60,30 +70,39 @@ public class ChoicePicker extends AndroidNonvisibleComponent {
         final int[] checkedItem = { preSelectedIndex };
 
         dialogBuilder.setSingleChoiceItems((CharSequence[]) listItems.toArray(new Object[0]), checkedItem[0],
-                (dialog, which) -> {
-                    // Store the selected item index
-                    checkedItem[0] = which;
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which)  {
+                        // Store the selected item index
+                        checkedItem[0] = which;
+                    }
                 });
 
         // Set the positive button text
         if (positiveButtonText != null && !positiveButtonText.isEmpty()) {
-            dialogBuilder.setPositiveButton(positiveButtonText, (dialog, which) -> {
-                if (checkedItem[0] >= 0 && checkedItem[0] < listItems.size()) {
-                    selection = listItems.get(checkedItem[0]).toString();
-                    selectionIndex = checkedItem[0] + 1;
-                    AfterSinglePicking(selection, selectionIndex);
-                } else {
-                    SinglePickerCancelled();
+            dialogBuilder.setPositiveButton(positiveButtonText, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    if (checkedItem[0] >= 0 && checkedItem[0] < listItems.size()) {
+                        selection = listItems.get(checkedItem[0]).toString();
+                        selectionIndex = checkedItem[0] + 1;
+                        AfterSinglePicking(selection, selectionIndex);
+                    } else {
+                        SinglePickerCancelled();
+                    }
+                    dialog.dismiss();
                 }
-                dialog.dismiss();
             });
         }
 
         // Set the negative button text
         if (negativeButtonText != null && !negativeButtonText.isEmpty()) {
-            dialogBuilder.setNegativeButton(negativeButtonText, (dialog, which) -> {
-                dialog.dismiss();
-                SinglePickerCancelled();
+            dialogBuilder.setNegativeButton(negativeButtonText, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which)  {
+                    dialog.dismiss();
+                    SinglePickerCancelled();
+                }
             });
         }
 
@@ -142,32 +161,43 @@ public class ChoicePicker extends AndroidNonvisibleComponent {
 
         // Set the custom adapter with multi-choice listener
         dialogBuilder.setMultiChoiceItems(itemsArray, checkedItems,
-                (dialog, which, isChecked) -> checkedItems[which] = isChecked);
+                new DialogInterface.OnMultiChoiceClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+                        checkedItems[which] = isChecked;
+                    }
+                });
 
         // Set the positive button text
         if (positiveButtonText != null && !positiveButtonText.isEmpty()) {
-            dialogBuilder.setPositiveButton(positiveButtonText, (dialog, which) -> {
-                // Get the selected items and indices
-                selections = new ArrayList<>();
-                indices = new ArrayList<>();
-                for (int i = 0; i < checkedItems.length; i++) {
-                    if (checkedItems[i]) {
-                        selections.add(listItems.get(i));
-                        indices.add(i + 1); // Add 1 to the index value
+            dialogBuilder.setPositiveButton(positiveButtonText, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    // Get the selected items and indices
+                    selections = new ArrayList<>();
+                    indices = new ArrayList<>();
+                    for (int i = 0; i < checkedItems.length; i++) {
+                        if (checkedItems[i]) {
+                            selections.add(listItems.get(i));
+                            indices.add(i + 1); // Add 1 to the index value
+                        }
                     }
-                }
 
-                // Dispatch the event with selections and indices
-                AfterMultiPicking(selections, indices);
+                    // Dispatch the event with selections and indices
+                    AfterMultiPicking(selections, indices);
+                }
             });
         }
 
         // Set the negative button text
         if (negativeButtonText != null && !negativeButtonText.isEmpty()) {
-            dialogBuilder.setNegativeButton(negativeButtonText, (dialog, which) -> {
-                dialog.dismiss();
-                // Raise the MultiPickerCancelled event
-                MultiPickerCancelled();
+            dialogBuilder.setNegativeButton(negativeButtonText, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                    // Raise the MultiPickerCancelled event
+                    MultiPickerCancelled();
+                }
             });
         }
 
@@ -175,27 +205,9 @@ public class ChoicePicker extends AndroidNonvisibleComponent {
         if (showSelectAllButton) {
 
             // Add neutral button manually
-            alertDialog.setButton(DialogInterface.BUTTON_NEUTRAL, selectAllButtonText, (dialog, which) -> {
-                // Toggle all items
-                boolean allChecked = true;
-                for (boolean checkedItem : checkedItems) {
-                    if (!checkedItem) {
-                        allChecked = false;
-                        break;
-                    }
-                }
-                Arrays.fill(checkedItems, !allChecked);
-                ((AlertDialog) dialog).getListView().clearChoices();
-                ((AlertDialog) dialog).getListView().invalidateViews();
-
-                // Update neutral button text
-                updateNeutralButtonText(alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL), checkedItems);
-            });
-
-            // Set the onShowListener for the dialog
-            alertDialog.setOnShowListener(dialog -> { // Declare dialog as final
-                Button allButton = alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL);
-                allButton.setOnClickListener(view -> {
+            alertDialog.setButton(DialogInterface.BUTTON_NEUTRAL, selectAllButtonText, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
                     // Toggle all items
                     boolean allChecked = true;
                     for (boolean checkedItem : checkedItems) {
@@ -210,7 +222,34 @@ public class ChoicePicker extends AndroidNonvisibleComponent {
 
                     // Update neutral button text
                     updateNeutralButtonText(alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL), checkedItems);
-                });
+                }
+            });
+
+            // Set the onShowListener for the dialog
+            alertDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+                @Override
+                public void onShow(DialogInterface dialog) { // Declare dialog as final
+                    Button allButton = alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+                    allButton.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            // Toggle all items
+                            boolean allChecked = true;
+                            for (boolean checkedItem : checkedItems) {
+                                if (!checkedItem) {
+                                    allChecked = false;
+                                    break;
+                                }
+                            }
+                            Arrays.fill(checkedItems, !allChecked);
+                            ((AlertDialog) dialog).getListView().clearChoices();
+                            ((AlertDialog) dialog).getListView().invalidateViews();
+
+                            // Update neutral button text
+                            updateNeutralButtonText(alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL), checkedItems);
+                        }
+                    });
+                }
             });
 
         }
@@ -267,37 +306,37 @@ public class ChoicePicker extends AndroidNonvisibleComponent {
     }
 
     @DesignerProperty(editorType = "boolean", defaultValue = "True")
-    @SimpleProperty(description = "Set whether to show or hide the Select All button for Multi Choice Picker Dialog.")
+    @SimpleProperty(description = "Set whether to show or hide the Select All button for Multi Choice Picker Dialog.", category = PropertyCategory.APPEARANCE)
     public void ShowSelectAllButton(boolean show) {
         showSelectAllButton = show;
     }
 
     @DesignerProperty(editorType = "string", defaultValue = "Select All")
-    @SimpleProperty(description = "Set the text for the Select All button for Multi Choice Picker Dialog.")
+    @SimpleProperty(description = "Set the text for the Select All button for Multi Choice Picker Dialog.", category = PropertyCategory.APPEARANCE)
     public void SelectAllButtonText(String text) {
         selectAllButtonText = text;
     }
 
     @DesignerProperty(editorType = "string", defaultValue = "Select None")
-    @SimpleProperty(description = "Set the text for the Deselect All button for Multi Choice Picker Dialog.")
+    @SimpleProperty(description = "Set the text for the Deselect All button for Multi Choice Picker Dialog.", category = PropertyCategory.APPEARANCE)
     public void SelectNoneButtonText(String text) {
         selectNoneButtonText = text;
     }
 
     @DesignerProperty(editorType = "string", defaultValue = "OK")
-    @SimpleProperty(description = "Sets the positive button text for dialog.")
+    @SimpleProperty(description = "Sets the positive button text for dialog.", category = PropertyCategory.APPEARANCE)
     public void PositiveButtonText(String text) {
         positiveButtonText = text;
     }
 
     @DesignerProperty(editorType = "string", defaultValue = "Cancel")
-    @SimpleProperty(description = "Sets the negative button text for dialog.")
+    @SimpleProperty(description = "Sets the negative button text for dialog.", category = PropertyCategory.APPEARANCE)
     public void NegativeButtonText(String text) {
         negativeButtonText = text;
     }
 
     @DesignerProperty(editorType = "boolean", defaultValue = "True")
-    @SimpleProperty(description = "Sets whether the dialog is cancellable or not")
+    @SimpleProperty(description = "Sets whether the dialog is cancellable or not", category = PropertyCategory.BEHAVIOR)
     public void Cancellable(boolean cancellable) {
         this.cancellable = cancellable;
     }
@@ -310,7 +349,7 @@ public class ChoicePicker extends AndroidNonvisibleComponent {
     }
 
     @DesignerProperty(editorType = "string", defaultValue = "Select Item")
-    @SimpleProperty(description = "Sets the title of the custom list picker dialog.")
+    @SimpleProperty(description = "Sets the title of the custom list picker dialog.", category = PropertyCategory.APPEARANCE)
     public void Title(String title) {
         dialogTitle = title;
     }
@@ -322,7 +361,7 @@ public class ChoicePicker extends AndroidNonvisibleComponent {
     }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_STRING)
-    @SimpleProperty(description = "Sets the list items for the custom list picker dialog from a comma-separated string value.")
+    @SimpleProperty(description = "Sets the list items for the custom list picker dialog from a comma-separated string value.", category = PropertyCategory.APPEARANCE)
     public void ElementsFromString(String elements) {
         String[] items = elements.split(",");
         List<Object> itemList = new ArrayList<>();
