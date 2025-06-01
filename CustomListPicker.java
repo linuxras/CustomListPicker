@@ -477,7 +477,7 @@ public class CustomListPicker extends AndroidNonvisibleComponent {
         return listItems;
     }
 
-    @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "true")
+    @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
     @SimpleProperty(description = "Sets the visibility of the filter bar in the custom list picker dialog.", category = PropertyCategory.BEHAVIOR)
     public void ShowFilterBar(boolean visible) {
         isSearchBoxVisible = visible;
@@ -510,7 +510,7 @@ public class CustomListPicker extends AndroidNonvisibleComponent {
         }
     }
 
-    @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "false")
+    @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "False")
     @SimpleProperty(description = "Sets the bold style for the dialog font.", category = PropertyCategory.APPEARANCE)
     public void FontBold(boolean bold) {
         FontTypefaceBold(bold);
